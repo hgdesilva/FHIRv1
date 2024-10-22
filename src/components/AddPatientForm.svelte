@@ -12,6 +12,8 @@
   let gender = '';
   let birthDate = '';
   let phoneNumber = '';
+  let phoneError = '';
+  let submitError = '';
 
   onMount(() => {
     if (isEditing && patient) {
@@ -23,53 +25,62 @@
     }
   });
 
+  function handlePhoneInput(event) {
+    const input = event.target.value;
+    const validInput = input.replace(/[^0-9()\-\s]/g, '');
+    
+    if (input !== validInput) {
+      phoneError = 'Only numbers, spaces, hyphens (-), and parentheses () are allowed.';
+    } else {
+      phoneError = '';
+    }
+    
+    phoneNumber = validInput;
+  }
+
   async function handleSubmit() {
+    submitError = '';
+    if (phoneError) {
+      return; // Prevent submission if there's a phone error
+    }
+
     const patientData = {
-      resourceType: "Patient",
-      name: [
-        {
-          use: "official",
-          family: lastName,
-          given: [firstName]
-        }
-      ],
-      gender: gender,
-      birthDate: birthDate,
-      telecom: [
-        {
-          system: "phone",
-          value: phoneNumber
-        }
-      ]
+      resourceType: 'Patient',
+      id: isEditing ? patient.id : undefined,
+      name: [{ given: [firstName], family: lastName }],
+      gender,
+      birthDate,
+      telecom: [{ system: 'phone', value: phoneNumber }],
+      active: true
     };
 
-    if (isEditing) {
-      patientData.id = patient.id;
-    }
+    console.log('Patient data being sent:', JSON.stringify(patientData, null, 2));
 
     try {
       const url = isEditing ? `${endpoint}/Patient/${patient.id}` : `${endpoint}/Patient`;
       const method = isEditing ? 'PUT' : 'POST';
 
+      console.log(`Sending ${method} request to ${url}`);
+
       const response = await fetch(url, {
-        method: method,
+        method,
         headers: {
-          'Content-Type': 'application/fhir+json'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(patientData)
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
+        throw new Error(`Failed to save patient: ${response.statusText}. Server says: ${errorText}`);
       }
 
-      const result = await response.json();
-      console.log(`Patient ${isEditing ? 'updated' : 'added'} successfully:`, result);
-      dispatch('patientAdded', result);
+      dispatch('patientAdded');
       dispatch('toggleAddForm');
     } catch (error) {
-      console.error(`Error ${isEditing ? 'updating' : 'adding'} patient:`, error);
-      // Handle error (e.g., show error message to user)
+      console.error('Error saving patient:', error);
+      submitError = error.message;
     }
   }
 
@@ -109,11 +120,20 @@
 
     <div class="form-group">
       <label for="phoneNumber">Phone Number:</label>
-      <input id="phoneNumber" type="tel" bind:value={phoneNumber}>
+      <input 
+        id="phoneNumber" 
+        type="tel" 
+        bind:value={phoneNumber}
+        on:input={handlePhoneInput}
+        placeholder="Enter numbers, spaces, hyphens (-), or parentheses ()"
+      >
+      {#if phoneError}
+        <p class="error-message">{phoneError}</p>
+      {/if}
     </div>
 
     <div class="form-actions">
-      <button type="submit">{isEditing ? 'Update' : 'Add'} Patient</button>
+      <button type="submit" disabled={phoneError}>{isEditing ? 'Update' : 'Add'} Patient</button>
       <button type="button" on:click={handleCancel}>Cancel</button>
     </div>
   </form>
@@ -124,7 +144,7 @@
     max-width: 400px;
     margin: 0 auto;
     padding: 20px;
-    background-color: #f9f9f9;
+    background-color: rgb(232, 247, 227);
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
@@ -188,5 +208,16 @@
 
   button[type="button"]:hover {
     background-color: #da190b;
+  }
+
+  .error-message {
+    color: #f44336;
+    font-size: 0.8em;
+    margin-top: 5px;
+  }
+
+  button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
   }
 </style>

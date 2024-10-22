@@ -111,6 +111,14 @@
     showPatientsList = false;
     showSearch = false;
   }
+
+  function handlePatientSaved(event) {
+    console.log('Patient saved:', event.detail);
+    // Refresh the patient list or update the UI as needed
+    fetchPatients(); // Assuming you have a function to fetch patients
+    showAddForm = false;
+    editingPatient = null;
+  }
 </script>
 
 <main>
@@ -121,7 +129,7 @@
       patient={editingPatient?.resource || null}
       isEditing={!!editingPatient}
       on:toggleAddForm={toggleAddForm}
-      on:patientAdded={handleAddPatient} 
+      on:patientSaved={handlePatientSaved}
       {endpoint}
     />
   {:else if showSearch}
@@ -139,6 +147,12 @@
     />
   {/if}
 </main>
+
+<div class="footer">
+  <p>By Dr. Hiran DeSilva for the Medblocks bootcamp October 2024</p>
+  <p>Thanks to Vipin and Cursor for their help and support</p>
+  <p>This is a demo application and does not contain any real patient data.</p>
+</div>
 
 <style>
   h1 {
@@ -166,5 +180,15 @@
 
   button:hover {
     background-color: #45a049;
+  }
+
+  .footer {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    text-align: center;
+    font-size: 0.9em;
+    color: #333;
+    border-top: 1px solid #ddd;
   }
 </style>

@@ -8,7 +8,7 @@
 
 <style>
   .card {
-    background-color: #f5f5f5; /* Light gray background */
+    background-color: rgb(232, 247, 227); /* Light gray background */
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
